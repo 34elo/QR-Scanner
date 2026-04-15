@@ -22,6 +22,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -39,8 +41,15 @@ public class FileController {
     }
 
     public static void saveToDocuments(Context context, List<Barcode> barcodes, FileType fileType, SaveListener listener) {
+        if (context == null) {
+            listener.onError("Контекст не доступен");
+            return;
+        }
         if (barcodes == null || barcodes.isEmpty()) {
             listener.onError("Список пуст");
+            return;
+        }
+        if (listener == null) {
             return;
         }
 
@@ -54,7 +63,7 @@ public class FileController {
     }
 
     public static void share(Context context, List<Barcode> barcodes, FileType fileType) {
-        if (barcodes == null || barcodes.isEmpty()) {
+        if (context == null || barcodes == null || barcodes.isEmpty()) {
             return;
         }
 
@@ -78,9 +87,14 @@ public class FileController {
     }
 
     private static void saveCsv(Context context, List<Barcode> barcodes, String fileName, SaveListener listener) {
+        if (barcodes == null || barcodes.isEmpty() || listener == null) {
+            return;
+        }
         StringBuilder sb = new StringBuilder();
         for (Barcode code : barcodes) {
-            sb.append(code.getValue()).append("\n");
+            if (code != null && code.getValue() != null) {
+                sb.append(code.getValue()).append("\n");
+            }
         }
         byte[] data = sb.toString().getBytes();
 
@@ -99,7 +113,7 @@ public class FileController {
 
         try {
             File cacheDir = new File(context.getCacheDir(), "shared");
-            if (!cacheDir.exists()) cacheDir.mkdirs();
+            Files.createDirectories(cacheDir.toPath());
 
             File file = new File(cacheDir, fileName);
             try (FileOutputStream fos = new FileOutputStream(file)) {
@@ -144,8 +158,13 @@ public class FileController {
     @SuppressWarnings("deprecation")
     private static void saveViaFile(Context context, String fileName, byte[] data, SaveListener listener) {
         File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS), "QRScanner");
-        if (!dir.exists() && !dir.mkdirs()) {
-            listener.onError("Не удалось создать папку");
+        try {
+            Path dirPath = dir.toPath();
+            if (!Files.exists(dirPath)) {
+                Files.createDirectories(dirPath);
+            }
+        } catch (Exception e) {
+            listener.onError("Не удалось создать папку: " + e.getMessage());
             return;
         }
 
@@ -162,6 +181,7 @@ public class FileController {
     private static void saveXlsx(Context context, List<Barcode> barcodes, String fileName, SaveListener listener) {
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Barcodes");
+
             int rowNum = 0;
             for (Barcode code : barcodes) {
                 Row row = sheet.createRow(rowNum++);
@@ -185,14 +205,15 @@ public class FileController {
     private static void shareXlsx(Context context, List<Barcode> barcodes, String fileName) {
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Barcodes");
+
             int rowNum = 0;
             for (Barcode code : barcodes) {
                 Row row = sheet.createRow(rowNum++);
                 row.createCell(0).setCellValue(code.getValue());
             }
 
-            File cacheDir = new File(context.getCacheDir(), "shared");
-            if (!cacheDir.exists()) cacheDir.mkdirs();
+File cacheDir = new File(context.getCacheDir(), "shared");
+            Files.createDirectories(cacheDir.toPath());
 
             File file = new File(cacheDir, fileName);
             try (FileOutputStream fos = new FileOutputStream(file)) {

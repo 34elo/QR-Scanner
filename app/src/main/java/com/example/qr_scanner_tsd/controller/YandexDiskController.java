@@ -20,6 +20,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
@@ -43,6 +45,11 @@ public class YandexDiskController {
 
     private static final Gson GSON = new Gson();
     private static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
+    private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r);
+        t.setName("YandexDisk-" + t.getId());
+        return t;
+    });
 
     public interface UploadListener {
         void onSuccess(String fileName, String remotePath);
@@ -61,6 +68,9 @@ public class YandexDiskController {
     }
 
     public static void uploadFile(List<Barcode> barcodes, FileController.FileType fileType, UploadListener listener) {
+        if (listener == null) {
+            return;
+        }
         if (barcodes == null || barcodes.isEmpty()) {
             listener.onError("Список штрихкодов пуст");
             return;
@@ -83,7 +93,9 @@ public class YandexDiskController {
         } else {
             StringBuilder sb = new StringBuilder();
             for (Barcode code : barcodes) {
-                sb.append(code.getValue()).append("\n");
+                if (code != null && code.getValue() != null) {
+                    sb.append(code.getValue()).append("\n");
+                }
             }
             data = sb.toString().getBytes(StandardCharsets.UTF_8);
             extension = ".csv";
@@ -97,12 +109,18 @@ public class YandexDiskController {
     }
 
     private static byte[] generateXlsxData(List<Barcode> barcodes) {
+        if (barcodes == null || barcodes.isEmpty()) {
+            return new byte[0];
+        }
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Barcodes");
+
             int rowNum = 0;
             for (Barcode code : barcodes) {
-                Row row = sheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(code.getValue());
+                if (code != null && code.getValue() != null) {
+                    Row row = sheet.createRow(rowNum++);
+                    row.createCell(0).setCellValue(code.getValue());
+                }
             }
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             workbook.write(baos);
@@ -148,7 +166,7 @@ public class YandexDiskController {
 
         void start() {
             postProgress(0);
-            new Thread(() -> {
+            EXECUTOR.execute(() -> {
                 try {
                     ensureFolderExists();
                     String uploadUrl = getUploadUrl();
@@ -161,7 +179,7 @@ public class YandexDiskController {
                 } catch (Exception e) {
                     postError(e.getMessage());
                 }
-            }).start();
+            });
         }
 
         private void ensureFolderExists() throws IOException {
@@ -241,7 +259,7 @@ public class YandexDiskController {
         }
 
         void start() {
-            new Thread(() -> {
+            EXECUTOR.execute(() -> {
                 try {
                     Request request = new Request.Builder()
                             .url(BASE_URL)
@@ -270,7 +288,7 @@ public class YandexDiskController {
                 } catch (Exception e) {
                     postError(e.getMessage());
                 }
-            }).start();
+            });
         }
 
         private void postSuccess(long usedSpace, long totalSpace) {

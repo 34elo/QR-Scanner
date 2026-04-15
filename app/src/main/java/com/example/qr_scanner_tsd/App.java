@@ -3,18 +3,21 @@ package com.example.qr_scanner_tsd;
 import android.app.Application;
 
 import com.example.qr_scanner_tsd.controller.ScannerController;
+import com.example.qr_scanner_tsd.model.BarcodeRepository;
 import com.example.qr_scanner_tsd.model.SettingsRepository;
 
 public class App extends Application {
 
     private static App instance;
     private ScannerController scannerController;
+    private BarcodeRepository barcodeRepository;
 
     @Override
     public void onCreate() {
         super.onCreate();
         instance = this;
         scannerController = new ScannerController(this);
+        barcodeRepository = new BarcodeRepository();
         SettingsRepository.init(this);
     }
 
@@ -24,5 +27,9 @@ public class App extends Application {
 
     public ScannerController getScannerController() {
         return scannerController;
+    }
+
+    public BarcodeRepository getBarcodeRepository() {
+        return barcodeRepository;
     }
 }

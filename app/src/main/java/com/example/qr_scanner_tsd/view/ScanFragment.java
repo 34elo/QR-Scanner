@@ -18,7 +18,6 @@ import com.example.qr_scanner_tsd.controller.ScannerController;
 import com.example.qr_scanner_tsd.controller.YandexDiskController;
 import com.example.qr_scanner_tsd.databinding.FragmentScanBinding;
 import com.example.qr_scanner_tsd.model.Barcode;
-import com.example.qr_scanner_tsd.model.BarcodeRepository;
 import com.example.qr_scanner_tsd.model.SettingsRepository;
 
 import java.io.File;
@@ -48,12 +47,14 @@ public class ScanFragment extends Fragment {
         }
 
         controller = App.getInstance().getScannerController();
+        var repository = App.getInstance().getBarcodeRepository();
+        repository.setTrimLength(SettingsRepository.getTrimLength());
 
         adapter = new BarcodeAdapter();
         binding.rvBarcodes.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.rvBarcodes.setAdapter(adapter);
 
-        for (Barcode barcode : BarcodeRepository.getAll()) {
+        for (Barcode barcode : repository.getAll()) {
             adapter.add(barcode);
         }
 
@@ -80,23 +81,19 @@ public class ScanFragment extends Fragment {
     }
 
     private void onScan(String barcode) {
-        int trimLength = SettingsRepository.getTrimLength();
-        if (trimLength > 0 && barcode.length() > trimLength) {
-            barcode = barcode.substring(0, trimLength);
-        }
-
+        var repository = App.getInstance().getBarcodeRepository();
         boolean allowDuplicates = SettingsRepository.isAllowDuplicates();
         boolean added;
 
         if (allowDuplicates) {
-            BarcodeRepository.addAllowDuplicate(barcode);
+            repository.addAllowDuplicate(barcode);
             added = true;
         } else {
-            added = BarcodeRepository.add(barcode);
+            added = repository.add(barcode);
         }
 
         if (added) {
-            adapter.add(BarcodeRepository.getLast());
+            adapter.add(repository.getLast());
         } else {
             Toast.makeText(requireContext(), "Уже есть в списке", Toast.LENGTH_SHORT).show();
         }
@@ -104,17 +101,19 @@ public class ScanFragment extends Fragment {
     }
 
     private void updateUI() {
-        binding.tvScanCount.setText(String.valueOf(BarcodeRepository.getCount()));
+        var repository = App.getInstance().getBarcodeRepository();
+        binding.tvScanCount.setText(String.valueOf(repository.getCount()));
     }
 
     private void saveToFile() {
-        if (BarcodeRepository.isEmpty()) {
+        var repository = App.getInstance().getBarcodeRepository();
+        if (repository.isEmpty()) {
             Toast.makeText(requireContext(), "Нечего сохранять", Toast.LENGTH_SHORT).show();
             return;
         }
 
         FileController.FileType fileType = SettingsRepository.getFileType();
-        FileController.saveToDocuments(requireContext(), BarcodeRepository.getAll(), fileType, new FileController.SaveListener() {
+        FileController.saveToDocuments(requireContext(), repository.getAll(), fileType, new FileController.SaveListener() {
             @Override
             public void onSuccess(String filePath) {
                 Toast.makeText(requireContext(), "Сохранено: " + filePath, Toast.LENGTH_SHORT).show();
@@ -128,7 +127,8 @@ public class ScanFragment extends Fragment {
     }
 
     private void uploadToYandexDisk() {
-        if (BarcodeRepository.isEmpty()) {
+        var repository = App.getInstance().getBarcodeRepository();
+        if (repository.isEmpty()) {
             Toast.makeText(requireContext(), "Нечего выгружать", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -137,7 +137,7 @@ public class ScanFragment extends Fragment {
         binding.btnUpload.setText("Загрузка...");
 
         FileController.FileType fileType = SettingsRepository.getFileType();
-        FileController.saveToDocuments(requireContext(), BarcodeRepository.getAll(), fileType, new FileController.SaveListener() {
+        FileController.saveToDocuments(requireContext(), repository.getAll(), fileType, new FileController.SaveListener() {
             @Override
             public void onSuccess(String filePath) {
                 uploadToYandexDiskAndDelete(filePath);
@@ -153,7 +153,8 @@ public class ScanFragment extends Fragment {
     }
 
     private void uploadToYandexDiskAndDelete(String filePath) {
-        YandexDiskController.uploadFile(BarcodeRepository.getAll(), new YandexDiskController.UploadListener() {
+        var repository = App.getInstance().getBarcodeRepository();
+        YandexDiskController.uploadFile(repository.getAll(), new YandexDiskController.UploadListener() {
             @Override
             public void onSuccess(String fileName, String remotePath) {
                 deleteLocalFile(filePath);
@@ -188,7 +189,8 @@ public class ScanFragment extends Fragment {
     }
 
     private void clearAll() {
-        if (BarcodeRepository.isEmpty()) {
+        var repository = App.getInstance().getBarcodeRepository();
+        if (repository.isEmpty()) {
             Toast.makeText(requireContext(), "Список пуст", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -197,7 +199,7 @@ public class ScanFragment extends Fragment {
                 .setTitle("Очистка")
                 .setMessage("Очистить все отсканированные коды?")
                 .setPositiveButton("Да", (dialog, which) -> {
-                    BarcodeRepository.clear();
+                    repository.clear();
                     adapter.clear();
                     updateUI();
                     Toast.makeText(requireContext(), "Очищено", Toast.LENGTH_SHORT).show();

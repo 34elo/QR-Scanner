@@ -123,40 +123,51 @@ public class CheckFragment extends Fragment {
     }
 
     private void loadCsvFile(Uri uri) throws Exception {
-        BufferedReader reader = new BufferedReader(
+        try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(requireContext().getContentResolver().openInputStream(uri), StandardCharsets.UTF_8)
-        );
-
-        String line;
-        while ((line = reader.readLine()) != null) {
-            line = line.trim();
-            if (!line.isEmpty()) {
-                String code = line;
-                int commaIndex = line.indexOf(',');
-                if (commaIndex > 0) {
-                    code = line.substring(0, commaIndex).trim();
-                }
-                if (!code.isEmpty()) {
-                    loadedCodes.add(code);
+        )) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty()) {
+                    String code = line;
+                    int commaIndex = line.indexOf(',');
+                    if (commaIndex > 0) {
+                        code = line.substring(0, commaIndex).trim();
+                    }
+                    if (!code.isEmpty()) {
+                        loadedCodes.add(code);
+                    }
                 }
             }
         }
-        reader.close();
     }
 
     private void loadXlsxFile(Uri uri) throws Exception {
         try (Workbook workbook = new XSSFWorkbook(requireContext().getContentResolver().openInputStream(uri))) {
+            if (workbook.getNumberOfSheets() == 0) {
+                return;
+            }
             Sheet sheet = workbook.getSheetAt(0);
+            if (sheet == null) {
+                return;
+            }
             for (Row row : sheet) {
+                if (row == null) {
+                    continue;
+                }
                 short minColIx = row.getFirstCellNum();
                 short maxColIx = row.getLastCellNum();
+                if (minColIx < 0 || maxColIx <= minColIx) {
+                    continue;
+                }
                 for (short colIx = minColIx; colIx < maxColIx; colIx++) {
                     org.apache.poi.ss.usermodel.Cell cell = row.getCell(colIx);
                     if (cell != null) {
                         try {
-                            String code = cell.getStringCellValue();
+                            String code = getCellStringValue(cell);
                             if (code != null && !code.isEmpty()) {
-                                loadedCodes.add(code.replace("?", ""));
+                                loadedCodes.add(code);
                             }
                         } catch (Exception e) {
                             // ignore non-string cells
@@ -164,6 +175,27 @@ public class CheckFragment extends Fragment {
                     }
                 }
             }
+        }
+    }
+
+    private String getCellStringValue(org.apache.poi.ss.usermodel.Cell cell) {
+        if (cell == null) {
+            return null;
+        }
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue();
+            case NUMERIC:
+                if (org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted(cell)) {
+                    return cell.getDateCellValue().toString();
+                }
+                return String.valueOf((long) cell.getNumericCellValue());
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                return cell.getCellFormula();
+            default:
+                return null;
         }
     }
 
