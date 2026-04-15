@@ -3,6 +3,7 @@ package com.example.qr_scanner_tsd.model;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.example.qr_scanner_tsd.BuildConfig;
 import com.example.qr_scanner_tsd.controller.FileController;
 
 public class SettingsRepository {
@@ -12,7 +13,6 @@ public class SettingsRepository {
     private static final String KEY_FILE_TYPE = "file_type";
     private static final String KEY_TRIM_LENGTH = "trim_length";
     private static final String KEY_ALLOW_DUPLICATES = "allow_duplicates";
-    private static final String YANDEX_TOKEN = "y0__xDX3ouDBxjnr0AgtoaGixcwpMuPlwip9lGa9uO7gFDCzCy7mMBK4yACiQ";
 
     private static SharedPreferences prefs;
 
@@ -58,6 +58,6 @@ public class SettingsRepository {
     }
 
     public static String getYandexToken() {
-        return YANDEX_TOKEN;
+        return BuildConfig.YANDEX_TOKEN;
     }
 }

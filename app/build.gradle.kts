@@ -1,4 +1,5 @@
 import org.gradle.kotlin.dsl.invoke
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -6,9 +7,10 @@ plugins {
 
 android {
     namespace = "com.example.qr_scanner_tsd"
-    
+
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     compileSdk = 36
@@ -28,6 +30,13 @@ android {
         debug {
             isMinifyEnabled = false
             isShrinkResources = false
+            val secretsFile = rootProject.file("secrets.properties")
+            if (secretsFile.exists()) {
+                val secrets = Properties()
+                secrets.load(secretsFile.inputStream())
+                val token = secrets.getProperty("YANDEX_TOKEN") ?: ""
+                buildConfigField("String", "YANDEX_TOKEN", "\"$token\"")
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
