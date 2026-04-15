@@ -87,6 +87,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             loadFragment(new ScanFragment());
             setToolbarTitle("Сканирование");
             setNavHeaderTitle("Сканирование");
+        } else if (id == R.id.nav_check) {
+            loadFragment(new CheckFragment());
+            setToolbarTitle("Проверка");
+            setNavHeaderTitle("Проверка");
         } else if (id == R.id.nav_settings) {
             loadFragment(new SettingsFragment());
             setToolbarTitle("Настройки");
