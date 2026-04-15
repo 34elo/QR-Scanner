@@ -6,6 +6,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -81,11 +83,7 @@ public class SettingsFragment extends Fragment {
             boolean allowDuplicates = binding.rbDuplicatesYes.isChecked();
             SettingsRepository.setAllowDuplicates(allowDuplicates);
 
-            String message = "Сохранено";
-            if (fileType2 == FileController.FileType.XLSX) {
-                message += " (XLSX временно сохраняется как CSV)";
-            }
-            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), "Сохранено", Toast.LENGTH_SHORT).show();
         });
     }
 

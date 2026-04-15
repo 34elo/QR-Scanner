@@ -15,7 +15,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.qr_scanner_tsd"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
 
         versionCode = 1
@@ -57,6 +57,8 @@ android {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     implementation(files("libs/ru.atol.barcodeservice.api-release-1.5.32.aar"))
+    implementation(libs.poi)
+    implementation(libs.poiOoxml)
 
     implementation(libs.appcompat)
     implementation(libs.material)

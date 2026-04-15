@@ -8,6 +8,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -17,6 +19,11 @@ import androidx.fragment.app.Fragment;
 import com.example.qr_scanner_tsd.App;
 import com.example.qr_scanner_tsd.controller.ScannerController;
 import com.example.qr_scanner_tsd.databinding.FragmentCheckBinding;
+
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -58,6 +65,7 @@ public class CheckFragment extends Fragment {
 
         binding.btnSelectFile.setOnClickListener(v -> selectFile());
         binding.btnClearCodes.setOnClickListener(v -> clearCodes());
+        binding.btnInfo.setOnClickListener(v -> showInfo());
 
         view.post(() -> {
             binding.dummyFocus.requestFocus();
@@ -77,7 +85,15 @@ public class CheckFragment extends Fragment {
     }
 
     private void selectFile() {
-        filePickerLauncher.launch("text/*");
+        filePickerLauncher.launch("*/*");
+    }
+
+    private void showInfo() {
+        new AlertDialog.Builder(requireContext())
+                .setTitle("Формат XLSX")
+                .setMessage("При использовании XLSX файлов некоторые коды могут не находиться из-за особенностей Excel. Рекомендуется использовать CSV.")
+                .setPositiveButton("ОК", null)
+                .show();
     }
 
     private void onFileSelected(Uri uri) {
@@ -88,28 +104,15 @@ public class CheckFragment extends Fragment {
         loadedCodes.clear();
 
         try {
-            BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(requireContext().getContentResolver().openInputStream(uri), StandardCharsets.UTF_8)
-            );
-
             String fileName = getFileName(uri);
             binding.tvFileName.setText(fileName != null ? fileName : "файл");
 
-            String line;
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                if (!line.isEmpty()) {
-                    String code = line;
-                    int commaIndex = line.indexOf(',');
-                    if (commaIndex > 0) {
-                        code = line.substring(0, commaIndex).trim();
-                    }
-                    if (!code.isEmpty()) {
-                        loadedCodes.add(code);
-                    }
-                }
+            boolean isXlsx = fileName != null && (fileName.toLowerCase().endsWith(".xlsx") || fileName.toLowerCase().endsWith(".xls"));
+            if (isXlsx) {
+                loadXlsxFile(uri);
+            } else {
+                loadCsvFile(uri);
             }
-            reader.close();
 
             updateLoadedCodesCount();
             Toast.makeText(requireContext(), "Загружено " + loadedCodes.size() + " кодов", Toast.LENGTH_SHORT).show();
@@ -119,7 +122,52 @@ public class CheckFragment extends Fragment {
         }
     }
 
-    private String normalizeCode(String code) {
+    private void loadCsvFile(Uri uri) throws Exception {
+        BufferedReader reader = new BufferedReader(
+                new InputStreamReader(requireContext().getContentResolver().openInputStream(uri), StandardCharsets.UTF_8)
+        );
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            line = line.trim();
+            if (!line.isEmpty()) {
+                String code = line;
+                int commaIndex = line.indexOf(',');
+                if (commaIndex > 0) {
+                    code = line.substring(0, commaIndex).trim();
+                }
+                if (!code.isEmpty()) {
+                    loadedCodes.add(code);
+                }
+            }
+        }
+        reader.close();
+    }
+
+    private void loadXlsxFile(Uri uri) throws Exception {
+        try (Workbook workbook = new XSSFWorkbook(requireContext().getContentResolver().openInputStream(uri))) {
+            Sheet sheet = workbook.getSheetAt(0);
+            for (Row row : sheet) {
+                short minColIx = row.getFirstCellNum();
+                short maxColIx = row.getLastCellNum();
+                for (short colIx = minColIx; colIx < maxColIx; colIx++) {
+                    org.apache.poi.ss.usermodel.Cell cell = row.getCell(colIx);
+                    if (cell != null) {
+                        try {
+                            String code = cell.getStringCellValue();
+                            if (code != null && !code.isEmpty()) {
+                                loadedCodes.add(code.replace("?", ""));
+                            }
+                        } catch (Exception e) {
+                            // ignore non-string cells
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+private String normalizeCode(String code) {
         return code.trim();
     }
 
@@ -173,13 +221,7 @@ public class CheckFragment extends Fragment {
             return;
         }
 
-        boolean found = false;
-        for (String loadedCode : loadedCodes) {
-            if (loadedCode.equals(normalized)) {
-                found = true;
-                break;
-            }
-        }
+        boolean found = loadedCodes.contains(normalized);
 
         if (found) {
             binding.tvCheckResult.setText("НАЙДЕН");

@@ -13,6 +13,12 @@ import androidx.core.content.FileProvider;
 import com.example.qr_scanner_tsd.model.Barcode;
 import com.example.qr_scanner_tsd.model.SettingsRepository;
 
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -40,8 +46,10 @@ public class FileController {
 
         String fileName = generateFileName();
 
-        if (fileType == FileType.CSV || fileType == FileType.XLSX) {
+        if (fileType == FileType.CSV) {
             saveCsv(context, barcodes, fileName + ".csv", listener);
+        } else if (fileType == FileType.XLSX) {
+            saveXlsx(context, barcodes, fileName + ".xlsx", listener);
         }
     }
 
@@ -52,8 +60,10 @@ public class FileController {
 
         String fileName = generateFileName();
 
-        if (fileType == FileType.CSV || fileType == FileType.XLSX) {
+        if (fileType == FileType.CSV) {
             shareCsv(context, barcodes, fileName + ".csv");
+        } else if (fileType == FileType.XLSX) {
+            shareXlsx(context, barcodes, fileName + ".xlsx");
         }
     }
 
@@ -146,6 +156,59 @@ public class FileController {
             listener.onSuccess(file.getAbsolutePath());
         } catch (Exception e) {
             listener.onError(e.getMessage());
+        }
+    }
+
+    private static void saveXlsx(Context context, List<Barcode> barcodes, String fileName, SaveListener listener) {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Barcodes");
+            int rowNum = 0;
+            for (Barcode code : barcodes) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(code.getValue());
+            }
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            workbook.write(baos);
+            byte[] data = baos.toByteArray();
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                saveViaMediaStore(context, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", data, listener);
+            } else {
+                saveViaFile(context, fileName, data, listener);
+            }
+        } catch (Exception e) {
+            listener.onError(e.getMessage());
+        }
+    }
+
+    private static void shareXlsx(Context context, List<Barcode> barcodes, String fileName) {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Barcodes");
+            int rowNum = 0;
+            for (Barcode code : barcodes) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(code.getValue());
+            }
+
+            File cacheDir = new File(context.getCacheDir(), "shared");
+            if (!cacheDir.exists()) cacheDir.mkdirs();
+
+            File file = new File(cacheDir, fileName);
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                workbook.write(fos);
+            }
+
+            Uri uri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", file);
+
+            Intent shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            context.startActivity(Intent.createChooser(shareIntent, "Отправить файл"));
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

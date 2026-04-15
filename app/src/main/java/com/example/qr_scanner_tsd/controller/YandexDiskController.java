@@ -7,6 +7,12 @@ import com.example.qr_scanner_tsd.model.Barcode;
 import com.example.qr_scanner_tsd.model.SettingsRepository;
 import com.google.gson.Gson;
 
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -26,6 +32,7 @@ public class YandexDiskController {
 
     private static final String BASE_URL = "https://cloud-api.yandex.net/v1/disk/resources";
     private static final MediaType MEDIA_TYPE_OCTET = MediaType.parse("application/octet-stream");
+    private static final MediaType MEDIA_TYPE_XLSX = MediaType.parse("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
     private static final OkHttpClient HTTP_CLIENT = new OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -49,6 +56,11 @@ public class YandexDiskController {
     }
 
     public static void uploadFile(List<Barcode> barcodes, UploadListener listener) {
+        FileController.FileType fileType = SettingsRepository.getFileType();
+        uploadFile(barcodes, fileType, listener);
+    }
+
+    public static void uploadFile(List<Barcode> barcodes, FileController.FileType fileType, UploadListener listener) {
         if (barcodes == null || barcodes.isEmpty()) {
             listener.onError("Список штрихкодов пуст");
             return;
@@ -60,16 +72,44 @@ public class YandexDiskController {
             return;
         }
 
-        StringBuilder sb = new StringBuilder();
-        for (Barcode code : barcodes) {
-            sb.append(code.getValue()).append("\n");
+        byte[] data;
+        String extension;
+        MediaType mediaType;
+
+        if (fileType == FileController.FileType.XLSX) {
+            data = generateXlsxData(barcodes);
+            extension = ".xlsx";
+            mediaType = MEDIA_TYPE_XLSX;
+        } else {
+            StringBuilder sb = new StringBuilder();
+            for (Barcode code : barcodes) {
+                sb.append(code.getValue()).append("\n");
+            }
+            data = sb.toString().getBytes(StandardCharsets.UTF_8);
+            extension = ".csv";
+            mediaType = MEDIA_TYPE_OCTET;
         }
-        byte[] data = sb.toString().getBytes(StandardCharsets.UTF_8);
 
         String fileName = generateFileName();
-        String remotePath = "/QRScanner/" + fileName + ".csv";
+        String remotePath = "/QRScanner/" + fileName + extension;
 
-        new UploadOperation(token, remotePath, data, fileName, listener).start();
+        new UploadOperation(token, remotePath, data, fileName, mediaType, listener).start();
+    }
+
+    private static byte[] generateXlsxData(List<Barcode> barcodes) {
+        try (Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("Barcodes");
+            int rowNum = 0;
+            for (Barcode code : barcodes) {
+                Row row = sheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(code.getValue());
+            }
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            workbook.write(baos);
+            return baos.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static String generateFileName() {
@@ -94,13 +134,15 @@ public class YandexDiskController {
         private final String remotePath;
         private final byte[] data;
         private final String fileName;
+        private final MediaType mediaType;
         private final UploadListener listener;
 
-        UploadOperation(String token, String remotePath, byte[] data, String fileName, UploadListener listener) {
+        UploadOperation(String token, String remotePath, byte[] data, String fileName, MediaType mediaType, UploadListener listener) {
             this.token = token;
             this.remotePath = remotePath;
             this.data = data;
             this.fileName = fileName;
+            this.mediaType = mediaType;
             this.listener = listener;
         }
 
@@ -160,7 +202,7 @@ public class YandexDiskController {
         }
 
         private void uploadToUrl(String uploadUrl) throws IOException {
-            RequestBody body = RequestBody.create(data, MEDIA_TYPE_OCTET);
+            RequestBody body = RequestBody.create(data, mediaType);
             Request request = new Request.Builder()
                     .url(uploadUrl)
                     .put(body)
