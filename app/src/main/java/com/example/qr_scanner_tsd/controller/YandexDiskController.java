@@ -103,7 +103,7 @@ public class YandexDiskController {
         }
 
         String fileName = generateFileName();
-        String remotePath = "/QRScanner/" + fileName + extension;
+        String remotePath = "/Scanner/" + fileName + extension;
 
         new UploadOperation(token, remotePath, data, fileName, mediaType, listener).start();
     }
@@ -183,7 +183,7 @@ public class YandexDiskController {
         }
 
         private void ensureFolderExists() throws IOException {
-            String encodedPath = java.net.URLEncoder.encode("/QRScanner", "UTF-8");
+            String encodedPath = java.net.URLEncoder.encode("/Scanner", "UTF-8");
             String url = BASE_URL + "?path=" + encodedPath;
 
             Request request = new Request.Builder()

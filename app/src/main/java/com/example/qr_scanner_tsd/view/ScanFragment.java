@@ -1,6 +1,10 @@
 package com.example.qr_scanner_tsd.view;
 
+import android.os.Build;
 import android.os.Bundle;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -95,6 +99,7 @@ public class ScanFragment extends Fragment {
         if (added) {
             adapter.add(repository.getLast());
         } else {
+            vibrateDuplicate();
             Toast.makeText(requireContext(), "Уже есть в списке", Toast.LENGTH_SHORT).show();
         }
         updateUI();
@@ -103,6 +108,23 @@ public class ScanFragment extends Fragment {
     private void updateUI() {
         var repository = App.getInstance().getBarcodeRepository();
         binding.tvScanCount.setText(String.valueOf(repository.getCount()));
+    }
+
+    private void vibrateDuplicate() {
+        Vibrator vibrator;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            VibratorManager vibratorManager = (VibratorManager) requireContext().getSystemService(android.content.Context.VIBRATOR_MANAGER_SERVICE);
+            vibrator = vibratorManager.getDefaultVibrator();
+        } else {
+            vibrator = (Vibrator) requireContext().getSystemService(android.content.Context.VIBRATOR_SERVICE);
+        }
+        if (vibrator != null && vibrator.hasVibrator()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE));
+            } else {
+                vibrator.vibrate(200);
+            }
+        }
     }
 
     private void saveToFile() {

@@ -19,8 +19,8 @@ public class BarcodeAdapter extends RecyclerView.Adapter<BarcodeAdapter.ViewHold
     private final List<Barcode> barcodes = new ArrayList<>();
 
     public void add(Barcode barcode) {
-        barcodes.add(barcode);
-        notifyItemInserted(barcodes.size() - 1);
+        barcodes.add(0, barcode);
+        notifyItemInserted(0);
     }
 
     public void clear() {

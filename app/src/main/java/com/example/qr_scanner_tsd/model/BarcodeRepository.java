@@ -50,8 +50,8 @@ public class BarcodeRepository {
 
     public List<Barcode> getAll() {
         List<Barcode> result = new ArrayList<>();
-        for (String s : barcodes) {
-            result.add(new Barcode(s));
+        for (int i = barcodes.size() - 1; i >= 0; i--) {
+            result.add(new Barcode(barcodes.get(i)));
         }
         return result;
     }
