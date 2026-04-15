@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="8dp">
+    android:padding="16dp">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvBarcodes"
@@ -16,31 +15,28 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="16dp"
         android:orientation="vertical">
 
         <Button
             android:id="@+id/btnSave"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Сохранить"
-            android:textSize="12sp" />
+            android:text="Сохранить" />
 
         <Button
             android:id="@+id/btnUpload"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Выгрузить"
-            android:textSize="12sp" />
+            android:layout_marginTop="8dp"
+            android:text="Выгрузить на диск" />
 
         <Button
             android:id="@+id/btnClear"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Очистить"
-            android:textSize="12sp" />
+            android:layout_marginTop="8dp"
+            android:text="Очистить" />
 
     </LinearLayout>
 
@@ -48,10 +44,10 @@
         android:id="@+id/tvScanCount"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="16dp"
         android:gravity="end"
         android:text="Всего: 0"
-        android:textSize="14sp"
+        android:textSize="16sp"
         android:textStyle="bold" />
 
 </LinearLayout>

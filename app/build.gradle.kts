@@ -26,7 +26,7 @@ android {
 
     buildTypes {
         debug {
-            isMinifyEnabled = true
+            isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -34,7 +34,7 @@ android {
             )
         }
         release {
-            isMinifyEnabled = true
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -64,16 +64,8 @@ dependencies {
     implementation(libs.constraintlayout)
     implementation(libs.fragment)
     implementation(libs.drawerlayout)
-    implementation(libs.poi)
-    implementation(libs.poi.ooxml)
-
-    // Force log4j-api 2.17.1 to avoid MethodHandle issues on API < 26
-    implementation("org.apache.logging.log4j:log4j-api") {
-        version {
-            strictly("2.17.1")
-        }
-    }
-
+    implementation(libs.okhttp)
+    implementation(libs.gson)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

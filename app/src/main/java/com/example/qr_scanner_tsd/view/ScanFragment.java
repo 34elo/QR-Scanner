@@ -1,6 +1,5 @@
 package com.example.qr_scanner_tsd.view;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,10 +15,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.qr_scanner_tsd.App;
 import com.example.qr_scanner_tsd.controller.FileController;
 import com.example.qr_scanner_tsd.controller.ScannerController;
+import com.example.qr_scanner_tsd.controller.YandexDiskController;
 import com.example.qr_scanner_tsd.databinding.FragmentScanBinding;
 import com.example.qr_scanner_tsd.model.Barcode;
 import com.example.qr_scanner_tsd.model.BarcodeRepository;
 import com.example.qr_scanner_tsd.model.SettingsRepository;
+
+import java.io.File;
 
 public class ScanFragment extends Fragment {
 
@@ -39,16 +41,26 @@ public class ScanFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        if (getActivity() instanceof MainActivity) {
+            MainActivity mainActivity = (MainActivity) getActivity();
+            mainActivity.setToolbarTitle("Сканирование");
+            mainActivity.setNavHeaderTitle("Сканирование");
+        }
+
         controller = App.getInstance().getScannerController();
 
         adapter = new BarcodeAdapter();
         binding.rvBarcodes.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.rvBarcodes.setAdapter(adapter);
 
+        for (Barcode barcode : BarcodeRepository.getAll()) {
+            adapter.add(barcode);
+        }
+
         controller.setListener(this::onScan);
 
         binding.btnSave.setOnClickListener(v -> saveToFile());
-        binding.btnUpload.setOnClickListener(v -> uploadToServer());
+        binding.btnUpload.setOnClickListener(v -> uploadToYandexDisk());
         binding.btnClear.setOnClickListener(v -> clearAll());
 
         updateUI();
@@ -68,7 +80,21 @@ public class ScanFragment extends Fragment {
     }
 
     private void onScan(String barcode) {
-        boolean added = BarcodeRepository.add(barcode);
+        int trimLength = SettingsRepository.getTrimLength();
+        if (trimLength > 0 && barcode.length() > trimLength) {
+            barcode = barcode.substring(0, trimLength);
+        }
+
+        boolean allowDuplicates = SettingsRepository.isAllowDuplicates();
+        boolean added;
+
+        if (allowDuplicates) {
+            BarcodeRepository.addAllowDuplicate(barcode);
+            added = true;
+        } else {
+            added = BarcodeRepository.add(barcode);
+        }
+
         if (added) {
             adapter.add(BarcodeRepository.getLast());
         } else {
@@ -91,25 +117,74 @@ public class ScanFragment extends Fragment {
         FileController.saveToDocuments(requireContext(), BarcodeRepository.getAll(), fileType, new FileController.SaveListener() {
             @Override
             public void onSuccess(String filePath) {
-                requireActivity().runOnUiThread(() -> 
-                    Toast.makeText(requireContext(), "Сохранено: " + filePath, Toast.LENGTH_SHORT).show());
-            }   
+                Toast.makeText(requireContext(), "Сохранено: " + filePath, Toast.LENGTH_SHORT).show();
+            }
 
             @Override
             public void onError(String message) {
-                requireActivity().runOnUiThread(() -> 
-                    Toast.makeText(requireContext(), "Ошибка: " + message, Toast.LENGTH_SHORT).show());
+                Toast.makeText(requireContext(), "Ошибка: " + message, Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void uploadToServer() {
+    private void uploadToYandexDisk() {
         if (BarcodeRepository.isEmpty()) {
             Toast.makeText(requireContext(), "Нечего выгружать", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        binding.btnUpload.setEnabled(false);
+        binding.btnUpload.setText("Загрузка...");
+
         FileController.FileType fileType = SettingsRepository.getFileType();
-        FileController.share(requireContext(), BarcodeRepository.getAll(), fileType);
+        FileController.saveToDocuments(requireContext(), BarcodeRepository.getAll(), fileType, new FileController.SaveListener() {
+            @Override
+            public void onSuccess(String filePath) {
+                uploadToYandexDiskAndDelete(filePath);
+            }
+
+            @Override
+            public void onError(String message) {
+                binding.btnUpload.setEnabled(true);
+                binding.btnUpload.setText("Выгрузить на диск");
+                Toast.makeText(requireContext(), "Ошибка сохранения: " + message, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void uploadToYandexDiskAndDelete(String filePath) {
+        YandexDiskController.uploadFile(BarcodeRepository.getAll(), new YandexDiskController.UploadListener() {
+            @Override
+            public void onSuccess(String fileName, String remotePath) {
+                deleteLocalFile(filePath);
+                binding.btnUpload.setEnabled(true);
+                binding.btnUpload.setText("Выгрузить на диск");
+                Toast.makeText(requireContext(), "Загружено: " + fileName, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onProgress(int percent) {
+                binding.btnUpload.setText("Загрузка " + percent + "%");
+            }
+
+            @Override
+            public void onError(String message) {
+                binding.btnUpload.setEnabled(true);
+                binding.btnUpload.setText("Выгрузить на диск");
+                Toast.makeText(requireContext(), "Ошибка: " + message, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void deleteLocalFile(String filePath) {
+        try {
+            File file = new File(filePath);
+            if (file.exists()) {
+                file.delete();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void clearAll() {

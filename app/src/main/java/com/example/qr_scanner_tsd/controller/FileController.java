@@ -13,12 +13,6 @@ import androidx.core.content.FileProvider;
 import com.example.qr_scanner_tsd.model.Barcode;
 import com.example.qr_scanner_tsd.model.SettingsRepository;
 
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -44,15 +38,10 @@ public class FileController {
             return;
         }
 
-        String prefix = SettingsRepository.getFileName();
-        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy_HH.mm", Locale.getDefault());
-        String timestamp = sdf.format(new Date());
-        String fileName = prefix + "_" + timestamp;
+        String fileName = generateFileName();
 
-        if (fileType == FileType.CSV) {
+        if (fileType == FileType.CSV || fileType == FileType.XLSX) {
             saveCsv(context, barcodes, fileName + ".csv", listener);
-        } else {
-            saveXlsx(context, barcodes, fileName + ".xls", listener);
         }
     }
 
@@ -61,16 +50,21 @@ public class FileController {
             return;
         }
 
-        String prefix = SettingsRepository.getFileName();
-        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy_HH.mm", Locale.getDefault());
-        String timestamp = sdf.format(new Date());
-        String fileName = prefix + "_" + timestamp;
+        String fileName = generateFileName();
 
-        if (fileType == FileType.CSV) {
+        if (fileType == FileType.CSV || fileType == FileType.XLSX) {
             shareCsv(context, barcodes, fileName + ".csv");
-        } else {
-            shareXlsx(context, barcodes, fileName + ".xls");
         }
+    }
+
+    private static String generateFileName() {
+        String prefix = SettingsRepository.getFileName();
+        if (prefix == null || prefix.isEmpty()) {
+            prefix = "scan";
+            SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy_HH.mm", Locale.getDefault());
+            prefix = prefix + "_" + sdf.format(new Date());
+        }
+        return prefix;
     }
 
     private static void saveCsv(Context context, List<Barcode> barcodes, String fileName, SaveListener listener) {
@@ -84,35 +78,6 @@ public class FileController {
             saveViaMediaStore(context, fileName, "text/csv", data, listener);
         } else {
             saveViaFile(context, fileName, data, listener);
-        }
-    }
-
-    private static void saveXlsx(Context context, List<Barcode> barcodes, String fileName, SaveListener listener) {
-        try {
-            Workbook workbook = new XSSFWorkbook();
-            Sheet sheet = workbook.createSheet("Barcodes");
-
-            int rowNum = 0;
-            for (Barcode code : barcodes) {
-                Row row = sheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(code.getValue());
-            }
-
-            for (int i = 0; i < barcodes.size(); i++) {
-                sheet.autoSizeColumn(i);
-            }
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                byte[] data = toByteArray(workbook);
-                saveViaMediaStore(context, fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", data, listener);
-            } else {
-                byte[] data = toByteArray(workbook);
-                saveViaFile(context, fileName, data, listener);
-            }
-
-            workbook.close();
-        } catch (Exception e) {
-            listener.onError(e.getMessage());
         }
     }
 
@@ -142,51 +107,6 @@ public class FileController {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    private static void shareXlsx(Context context, List<Barcode> barcodes, String fileName) {
-        try {
-            Workbook workbook = new XSSFWorkbook();
-            Sheet sheet = workbook.createSheet("Barcodes");
-
-            int rowNum = 0;
-            for (Barcode code : barcodes) {
-                Row row = sheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(code.getValue());
-            }
-
-            for (int i = 0; i < barcodes.size(); i++) {
-                sheet.autoSizeColumn(i);
-            }
-
-            File cacheDir = new File(context.getCacheDir(), "shared");
-            if (!cacheDir.exists()) cacheDir.mkdirs();
-
-            File file = new File(cacheDir, fileName);
-            try (FileOutputStream fos = new FileOutputStream(file)) {
-                workbook.write(fos);
-            }
-
-            workbook.close();
-
-            Uri uri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", file);
-
-            Intent shareIntent = new Intent(Intent.ACTION_SEND);
-            shareIntent.setType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
-            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-            context.startActivity(Intent.createChooser(shareIntent, "Отправить файл"));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static byte[] toByteArray(Workbook workbook) throws Exception {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        workbook.write(bos);
-        workbook.close();
-        return bos.toByteArray();
     }
 
     private static void saveViaMediaStore(Context context, String fileName, String mimeType, byte[] data, SaveListener listener) {

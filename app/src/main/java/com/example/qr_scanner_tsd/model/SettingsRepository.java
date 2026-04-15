@@ -10,6 +10,9 @@ public class SettingsRepository {
     private static final String PREFS_NAME = "settings";
     private static final String KEY_FILE_NAME = "file_name";
     private static final String KEY_FILE_TYPE = "file_type";
+    private static final String KEY_TRIM_LENGTH = "trim_length";
+    private static final String KEY_ALLOW_DUPLICATES = "allow_duplicates";
+    private static final String YANDEX_TOKEN = "y0__xDX3ouDBxjnr0AgtoaGixcwpMuPlwip9lGa9uO7gFDCzCy7mMBK4yACiQ";
 
     private static SharedPreferences prefs;
 
@@ -36,5 +39,25 @@ public class SettingsRepository {
 
     public static void setFileType(FileController.FileType type) {
         prefs.edit().putString(KEY_FILE_TYPE, type.name()).apply();
+    }
+
+    public static int getTrimLength() {
+        return prefs.getInt(KEY_TRIM_LENGTH, 0);
+    }
+
+    public static void setTrimLength(int length) {
+        prefs.edit().putInt(KEY_TRIM_LENGTH, length).apply();
+    }
+
+    public static boolean isAllowDuplicates() {
+        return prefs.getBoolean(KEY_ALLOW_DUPLICATES, false);
+    }
+
+    public static void setAllowDuplicates(boolean allow) {
+        prefs.edit().putBoolean(KEY_ALLOW_DUPLICATES, allow).apply();
+    }
+
+    public static String getYandexToken() {
+        return YANDEX_TOKEN;
     }
 }

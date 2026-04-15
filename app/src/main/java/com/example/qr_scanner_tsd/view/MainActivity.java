@@ -2,6 +2,8 @@ package com.example.qr_scanner_tsd.view;
 
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
@@ -19,6 +21,7 @@ import com.google.android.material.navigation.NavigationView;
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private ActivityMainBinding binding;
+    private TextView tvHeaderTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,6 +30,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setContentView(binding.getRoot());
 
         setSupportActionBar(binding.toolbar);
+
+        View headerView = binding.navigationView.getHeaderView(0);
+        tvHeaderTitle = headerView.findViewById(R.id.tvHeaderTitle);
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, binding.drawerLayout, binding.toolbar,
@@ -49,7 +55,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         });
 
         if (savedInstanceState == null) {
+            setToolbarTitle("Сканирование");
+            setNavHeaderTitle("Сканирование");
             loadFragment(new ScanFragment());
+        }
+    }
+
+    private void updateHeaderTitle(String title) {
+        if (tvHeaderTitle != null) {
+            tvHeaderTitle.setText(title);
+        }
+    }
+
+    public void setToolbarTitle(String title) {
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle(title);
+        }
+    }
+
+    public void setNavHeaderTitle(String title) {
+        if (tvHeaderTitle != null) {
+            tvHeaderTitle.setText(title);
         }
     }
 
@@ -59,8 +85,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         if (id == R.id.nav_scan) {
             loadFragment(new ScanFragment());
+            setToolbarTitle("Сканирование");
+            setNavHeaderTitle("Сканирование");
         } else if (id == R.id.nav_settings) {
             loadFragment(new SettingsFragment());
+            setToolbarTitle("Настройки");
+            setNavHeaderTitle("Настройки");
         }
 
         binding.drawerLayout.closeDrawer(GravityCompat.START);

@@ -10,7 +10,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.example.qr_scanner_tsd.R;
 import com.example.qr_scanner_tsd.controller.FileController;
 import com.example.qr_scanner_tsd.databinding.FragmentSettingsBinding;
 import com.example.qr_scanner_tsd.model.SettingsRepository;
@@ -31,6 +30,12 @@ public class SettingsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        if (getActivity() instanceof MainActivity) {
+            MainActivity mainActivity = (MainActivity) getActivity();
+            mainActivity.setToolbarTitle("Настройки");
+            mainActivity.setNavHeaderTitle("Настройки");
+        }
+
         binding.etFileName.setText(SettingsRepository.getFileName());
 
         FileController.FileType fileType = SettingsRepository.getFileType();
@@ -38,6 +43,15 @@ public class SettingsFragment extends Fragment {
             binding.rbXlsx.setChecked(true);
         } else {
             binding.rbCsv.setChecked(true);
+        }
+
+        int trimLength = SettingsRepository.getTrimLength();
+        binding.etTrimLength.setText(trimLength > 0 ? String.valueOf(trimLength) : "");
+
+        if (SettingsRepository.isAllowDuplicates()) {
+            binding.rbDuplicatesYes.setChecked(true);
+        } else {
+            binding.rbDuplicatesNo.setChecked(true);
         }
 
         binding.btnSave.setOnClickListener(v -> {
@@ -52,7 +66,26 @@ public class SettingsFragment extends Fragment {
                 : FileController.FileType.CSV;
             SettingsRepository.setFileType(fileType2);
 
-            Toast.makeText(requireContext(), "Сохранено", Toast.LENGTH_SHORT).show();
+            String trimStr = binding.etTrimLength.getText().toString().trim();
+            int trimLen = 0;
+            if (!trimStr.isEmpty()) {
+                try {
+                    trimLen = Integer.parseInt(trimStr);
+                    if (trimLen < 0) trimLen = 0;
+                } catch (NumberFormatException e) {
+                    trimLen = 0;
+                }
+            }
+            SettingsRepository.setTrimLength(trimLen);
+
+            boolean allowDuplicates = binding.rbDuplicatesYes.isChecked();
+            SettingsRepository.setAllowDuplicates(allowDuplicates);
+
+            String message = "Сохранено";
+            if (fileType2 == FileController.FileType.XLSX) {
+                message += " (XLSX временно сохраняется как CSV)";
+            }
+            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
         });
     }
 
