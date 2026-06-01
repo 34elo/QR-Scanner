@@ -19,33 +19,41 @@ public class BarcodeRepository {
         }
     }
 
-    public boolean add(String value) {
-        if (value != null && !value.isEmpty()) {
-            String processed = trimLength > 0 && value.length() > trimLength
-                    ? value.substring(0, trimLength)
-                    : value.trim();
-            if (barcodeSet.contains(processed)) {
-                return false;
-            }
-            barcodes.add(processed);
-            barcodeSet.add(processed);
-            return true;
+    private String process(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        if (trimLength > 0 && trimmed.length() > trimLength) {
+            return trimmed.substring(0, trimLength);
         }
-        return false;
+        return trimmed;
+    }
+
+    public boolean add(String value) {
+        String processed = process(value);
+        if (processed == null || processed.isEmpty()) {
+            return false;
+        }
+        if (barcodeSet.contains(processed)) {
+            return false;
+        }
+        barcodes.add(processed);
+        barcodeSet.add(processed);
+        return true;
     }
 
     public void addAllowDuplicate(String value) {
-        if (value != null && !value.isEmpty()) {
-            String processed = trimLength > 0 && value.length() > trimLength
-                    ? value.substring(0, trimLength)
-                    : value.trim();
-            barcodes.add(processed);
+        String processed = process(value);
+        if (processed == null || processed.isEmpty()) {
+            return;
         }
+        barcodes.add(processed);
+        barcodeSet.add(processed);
     }
 
     public boolean contains(String value) {
-        if (value == null || value.isEmpty()) return false;
-        return barcodeSet.contains(value.trim());
+        String processed = process(value);
+        if (processed == null || processed.isEmpty()) return false;
+        return barcodeSet.contains(processed);
     }
 
     public List<Barcode> getAll() {

@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.drawerlayout)
     implementation(libs.okhttp)
     implementation(libs.gson)
+    implementation(libs.core.splashscreen)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

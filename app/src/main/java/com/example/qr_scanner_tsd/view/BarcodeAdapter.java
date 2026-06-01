@@ -23,6 +23,12 @@ public class BarcodeAdapter extends RecyclerView.Adapter<BarcodeAdapter.ViewHold
         notifyItemInserted(0);
     }
 
+    public void setAll(List<Barcode> items) {
+        barcodes.clear();
+        barcodes.addAll(items);
+        notifyDataSetChanged();
+    }
+
     public void clear() {
         barcodes.clear();
         notifyDataSetChanged();

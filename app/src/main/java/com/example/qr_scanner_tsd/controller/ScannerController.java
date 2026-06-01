@@ -16,12 +16,10 @@ public class ScannerController {
         void onScan(String barcode);
     }
 
-    private final Context context;
     private Listener listener;
     private BarcodeReceiver barcodeReceiver;
 
-    public ScannerController(Context context) {
-        this.context = context;
+    public ScannerController() {
     }
 
     public void setListener(Listener listener) {

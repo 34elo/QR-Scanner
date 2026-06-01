@@ -16,7 +16,7 @@ public class App extends Application {
     public void onCreate() {
         super.onCreate();
         instance = this;
-        scannerController = new ScannerController(this);
+        scannerController = new ScannerController();
         barcodeRepository = new BarcodeRepository();
         SettingsRepository.init(this);
     }

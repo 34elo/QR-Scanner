@@ -15,10 +15,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -82,36 +79,35 @@ public class YandexDiskController {
             return;
         }
 
-        byte[] data;
-        String extension;
-        MediaType mediaType;
+        final String fileName = SettingsRepository.buildOutputFileName();
+        final boolean isXlsx = fileType == FileController.FileType.XLSX;
+        final String extension = isXlsx ? ".xlsx" : ".csv";
+        final MediaType mediaType = isXlsx ? MEDIA_TYPE_XLSX : MEDIA_TYPE_OCTET;
+        final String remotePath = "/Scanner/" + fileName + extension;
 
-        if (fileType == FileController.FileType.XLSX) {
-            data = generateXlsxData(barcodes);
-            extension = ".xlsx";
-            mediaType = MEDIA_TYPE_XLSX;
-        } else {
-            StringBuilder sb = new StringBuilder();
-            for (Barcode code : barcodes) {
-                if (code != null && code.getValue() != null) {
-                    sb.append(code.getValue()).append("\n");
-                }
+        EXECUTOR.execute(() -> {
+            byte[] data;
+            try {
+                data = isXlsx ? generateXlsxData(barcodes) : generateCsvData(barcodes);
+            } catch (Exception e) {
+                MAIN_HANDLER.post(() -> listener.onError("Ошибка подготовки файла: " + e.getMessage()));
+                return;
             }
-            data = sb.toString().getBytes(StandardCharsets.UTF_8);
-            extension = ".csv";
-            mediaType = MEDIA_TYPE_OCTET;
-        }
-
-        String fileName = generateFileName();
-        String remotePath = "/Scanner/" + fileName + extension;
-
-        new UploadOperation(token, remotePath, data, fileName, mediaType, listener).start();
+            new UploadOperation(token, remotePath, data, fileName, mediaType, listener).start();
+        });
     }
 
-    private static byte[] generateXlsxData(List<Barcode> barcodes) {
-        if (barcodes == null || barcodes.isEmpty()) {
-            return new byte[0];
+    private static byte[] generateCsvData(List<Barcode> barcodes) {
+        StringBuilder sb = new StringBuilder();
+        for (Barcode code : barcodes) {
+            if (code != null && code.getValue() != null) {
+                sb.append(code.getValue()).append("\n");
+            }
         }
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static byte[] generateXlsxData(List<Barcode> barcodes) throws IOException {
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Barcodes");
 
@@ -125,18 +121,7 @@ public class YandexDiskController {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             workbook.write(baos);
             return baos.toByteArray();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
-    }
-
-    private static String generateFileName() {
-        String prefix = SettingsRepository.getFileName();
-        if (prefix == null || prefix.isEmpty()) {
-            SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy_HH.mm", Locale.getDefault());
-            return "scan_" + sdf.format(new Date());
-        }
-        return prefix;
     }
 
     public static void testConnection(String token, ConnectionTestListener listener) {

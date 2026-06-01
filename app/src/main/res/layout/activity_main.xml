@@ -17,7 +17,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:navigationIcon="@drawable/ic_menu"
-            app:title="QR Сканер ТСД" />
+            app:title="ScanLog" />
 
         <FrameLayout
             android:id="@+id/fragmentContainer"

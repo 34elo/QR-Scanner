@@ -26,5 +26,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "QR-Scanner-TSD"
+rootProject.name = "ScanLog"
 include(":app")

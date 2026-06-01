@@ -9,6 +9,7 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.GravityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
@@ -25,6 +26,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -58,12 +60,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             setToolbarTitle("Сканирование");
             setNavHeaderTitle("Сканирование");
             loadFragment(new ScanFragment());
-        }
-    }
-
-    private void updateHeaderTitle(String title) {
-        if (tvHeaderTitle != null) {
-            tvHeaderTitle.setText(title);
         }
     }
 

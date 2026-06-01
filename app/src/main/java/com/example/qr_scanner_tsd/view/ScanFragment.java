@@ -24,8 +24,6 @@ import com.example.qr_scanner_tsd.databinding.FragmentScanBinding;
 import com.example.qr_scanner_tsd.model.Barcode;
 import com.example.qr_scanner_tsd.model.SettingsRepository;
 
-import java.io.File;
-
 public class ScanFragment extends Fragment {
 
     private FragmentScanBinding binding;
@@ -58,9 +56,7 @@ public class ScanFragment extends Fragment {
         binding.rvBarcodes.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.rvBarcodes.setAdapter(adapter);
 
-        for (Barcode barcode : repository.getAll()) {
-            adapter.add(barcode);
-        }
+        adapter.setAll(repository.getAll());
 
         controller.setListener(this::onScan);
 
@@ -158,28 +154,10 @@ public class ScanFragment extends Fragment {
         binding.btnUpload.setEnabled(false);
         binding.btnUpload.setText("Загрузка...");
 
-        FileController.FileType fileType = SettingsRepository.getFileType();
-        FileController.saveToDocuments(requireContext(), repository.getAll(), fileType, new FileController.SaveListener() {
-            @Override
-            public void onSuccess(String filePath) {
-                uploadToYandexDiskAndDelete(filePath);
-            }
-
-            @Override
-            public void onError(String message) {
-                binding.btnUpload.setEnabled(true);
-                binding.btnUpload.setText("Выгрузить на диск");
-                Toast.makeText(requireContext(), "Ошибка сохранения: " + message, Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void uploadToYandexDiskAndDelete(String filePath) {
-        var repository = App.getInstance().getBarcodeRepository();
         YandexDiskController.uploadFile(repository.getAll(), new YandexDiskController.UploadListener() {
             @Override
             public void onSuccess(String fileName, String remotePath) {
-                deleteLocalFile(filePath);
+                if (binding == null) return;
                 binding.btnUpload.setEnabled(true);
                 binding.btnUpload.setText("Выгрузить на диск");
                 Toast.makeText(requireContext(), "Загружено: " + fileName, Toast.LENGTH_SHORT).show();
@@ -187,27 +165,18 @@ public class ScanFragment extends Fragment {
 
             @Override
             public void onProgress(int percent) {
+                if (binding == null) return;
                 binding.btnUpload.setText("Загрузка " + percent + "%");
             }
 
             @Override
             public void onError(String message) {
+                if (binding == null) return;
                 binding.btnUpload.setEnabled(true);
                 binding.btnUpload.setText("Выгрузить на диск");
                 Toast.makeText(requireContext(), "Ошибка: " + message, Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    private void deleteLocalFile(String filePath) {
-        try {
-            File file = new File(filePath);
-            if (file.exists()) {
-                file.delete();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     private void clearAll() {

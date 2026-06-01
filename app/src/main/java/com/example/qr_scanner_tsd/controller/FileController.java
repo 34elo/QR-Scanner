@@ -22,12 +22,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 public class FileController {
 
@@ -41,6 +39,9 @@ public class FileController {
     }
 
     public static void saveToDocuments(Context context, List<Barcode> barcodes, FileType fileType, SaveListener listener) {
+        if (listener == null) {
+            return;
+        }
         if (context == null) {
             listener.onError("Контекст не доступен");
             return;
@@ -49,11 +50,8 @@ public class FileController {
             listener.onError("Список пуст");
             return;
         }
-        if (listener == null) {
-            return;
-        }
 
-        String fileName = generateFileName();
+        String fileName = SettingsRepository.buildOutputFileName();
 
         if (fileType == FileType.CSV) {
             saveCsv(context, barcodes, fileName + ".csv", listener);
@@ -67,7 +65,7 @@ public class FileController {
             return;
         }
 
-        String fileName = generateFileName();
+        String fileName = SettingsRepository.buildOutputFileName();
 
         if (fileType == FileType.CSV) {
             shareCsv(context, barcodes, fileName + ".csv");
@@ -76,27 +74,18 @@ public class FileController {
         }
     }
 
-    private static String generateFileName() {
-        String prefix = SettingsRepository.getFileName();
-        if (prefix == null || prefix.isEmpty()) {
-            prefix = "scan";
-            SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy_HH.mm", Locale.getDefault());
-            prefix = prefix + "_" + sdf.format(new Date());
-        }
-        return prefix;
-    }
-
-    private static void saveCsv(Context context, List<Barcode> barcodes, String fileName, SaveListener listener) {
-        if (barcodes == null || barcodes.isEmpty() || listener == null) {
-            return;
-        }
+    private static byte[] barcodesToCsvBytes(List<Barcode> barcodes) {
         StringBuilder sb = new StringBuilder();
         for (Barcode code : barcodes) {
             if (code != null && code.getValue() != null) {
                 sb.append(code.getValue()).append("\n");
             }
         }
-        byte[] data = sb.toString().getBytes();
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static void saveCsv(Context context, List<Barcode> barcodes, String fileName, SaveListener listener) {
+        byte[] data = barcodesToCsvBytes(barcodes);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             saveViaMediaStore(context, fileName, "text/csv", data, listener);
@@ -106,10 +95,7 @@ public class FileController {
     }
 
     private static void shareCsv(Context context, List<Barcode> barcodes, String fileName) {
-        StringBuilder sb = new StringBuilder();
-        for (Barcode code : barcodes) {
-            sb.append(code.getValue()).append("\n");
-        }
+        byte[] data = barcodesToCsvBytes(barcodes);
 
         try {
             File cacheDir = new File(context.getCacheDir(), "shared");
@@ -117,7 +103,7 @@ public class FileController {
 
             File file = new File(cacheDir, fileName);
             try (FileOutputStream fos = new FileOutputStream(file)) {
-                fos.write(sb.toString().getBytes());
+                fos.write(data);
             }
 
             Uri uri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", file);
@@ -212,7 +198,7 @@ public class FileController {
                 row.createCell(0).setCellValue(code.getValue());
             }
 
-File cacheDir = new File(context.getCacheDir(), "shared");
+            File cacheDir = new File(context.getCacheDir(), "shared");
             Files.createDirectories(cacheDir.toPath());
 
             File file = new File(cacheDir, fileName);

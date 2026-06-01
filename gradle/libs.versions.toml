@@ -13,6 +13,7 @@ poi = "5.2.5"
 poiOoxml = "5.2.5"
 okhttp = "4.12.0"
 gson = "2.10.1"
+coreSplashscreen = "1.0.1"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -28,6 +29,7 @@ poi = { group = "org.apache.poi", name = "poi", version.ref = "poi" }
 poiOoxml = { group = "org.apache.poi", name = "poi-ooxml", version.ref = "poiOoxml" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

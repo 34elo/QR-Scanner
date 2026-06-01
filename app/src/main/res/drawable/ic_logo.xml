@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="160dp"
+    android:height="48dp"
+    android:viewportWidth="160"
+    android:viewportHeight="48">
+
+    <!-- Left big "C" (outer ring shape), center (24,24), R=20/12, opening on right -->
+    <path
+        android:fillColor="#1B9FE0"
+        android:pathData="M38.14,9.86 A20,20 0 1 0 38.14,38.14 L32.49,32.49 A12,12 0 1 1 32.49,15.51 Z" />
+
+    <!-- Middle "C", center (66,24), R=16/9, opening on right -->
+    <path
+        android:fillColor="#1B9FE0"
+        android:pathData="M77.31,12.69 A16,16 0 1 0 77.31,35.31 L72.36,30.36 A9,9 0 1 1 72.36,17.64 Z" />
+
+    <!-- Letter N -->
+    <path
+        android:fillColor="#1B9FE0"
+        android:pathData="M86,8 L94,8 L110,32 L110,8 L118,8 L118,40 L110,40 L94,16 L94,40 L86,40 Z" />
+
+    <!-- Right enclosing "C", center (136,24), R=20/12, opening on left (mirror) -->
+    <path
+        android:fillColor="#1B9FE0"
+        android:pathData="M121.86,9.86 A20,20 0 1 1 121.86,38.14 L127.51,32.49 A12,12 0 1 0 127.51,15.51 Z" />
+</vector>
