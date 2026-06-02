@@ -19,41 +19,33 @@ public class BarcodeRepository {
         }
     }
 
-    private String process(String value) {
-        if (value == null) return null;
-        String trimmed = value.trim();
-        if (trimLength > 0 && trimmed.length() > trimLength) {
-            return trimmed.substring(0, trimLength);
-        }
-        return trimmed;
-    }
-
     public boolean add(String value) {
-        String processed = process(value);
-        if (processed == null || processed.isEmpty()) {
-            return false;
+        if (value != null && !value.isEmpty()) {
+            String processed = trimLength > 0 && value.length() > trimLength
+                    ? value.substring(0, trimLength)
+                    : value.trim();
+            if (barcodeSet.contains(processed)) {
+                return false;
+            }
+            barcodes.add(processed);
+            barcodeSet.add(processed);
+            return true;
         }
-        if (barcodeSet.contains(processed)) {
-            return false;
-        }
-        barcodes.add(processed);
-        barcodeSet.add(processed);
-        return true;
+        return false;
     }
 
     public void addAllowDuplicate(String value) {
-        String processed = process(value);
-        if (processed == null || processed.isEmpty()) {
-            return;
+        if (value != null && !value.isEmpty()) {
+            String processed = trimLength > 0 && value.length() > trimLength
+                    ? value.substring(0, trimLength)
+                    : value.trim();
+            barcodes.add(processed);
         }
-        barcodes.add(processed);
-        barcodeSet.add(processed);
     }
 
     public boolean contains(String value) {
-        String processed = process(value);
-        if (processed == null || processed.isEmpty()) return false;
-        return barcodeSet.contains(processed);
+        if (value == null || value.isEmpty()) return false;
+        return barcodeSet.contains(value.trim());
     }
 
     public List<Barcode> getAll() {

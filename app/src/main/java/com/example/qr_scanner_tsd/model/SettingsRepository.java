@@ -6,10 +6,6 @@ import android.content.SharedPreferences;
 import com.example.qr_scanner_tsd.BuildConfig;
 import com.example.qr_scanner_tsd.controller.FileController;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-
 public class SettingsRepository {
 
     private static final String PREFS_NAME = "settings";
@@ -63,14 +59,5 @@ public class SettingsRepository {
 
     public static String getYandexToken() {
         return BuildConfig.YANDEX_TOKEN;
-    }
-
-    public static String buildOutputFileName() {
-        String prefix = getFileName();
-        if (prefix == null || prefix.isEmpty()) {
-            prefix = "scan";
-        }
-        SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy_HH.mm.ss", Locale.getDefault());
-        return prefix + "_" + sdf.format(new Date());
     }
 }

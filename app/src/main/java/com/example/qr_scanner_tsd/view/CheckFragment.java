@@ -129,14 +129,15 @@ public class CheckFragment extends Fragment {
             String line;
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
-                if (line.isEmpty()) continue;
-                String code = line;
-                int commaIndex = line.indexOf(',');
-                if (commaIndex > 0) {
-                    code = line.substring(0, commaIndex).trim();
-                }
-                if (!code.isEmpty()) {
-                    loadedCodes.add(normalizeCode(code));
+                if (!line.isEmpty()) {
+                    String code = line;
+                    int commaIndex = line.indexOf(',');
+                    if (commaIndex > 0) {
+                        code = line.substring(0, commaIndex).trim();
+                    }
+                    if (!code.isEmpty()) {
+                        loadedCodes.add(code);
+                    }
                 }
             }
         }
@@ -165,11 +166,8 @@ public class CheckFragment extends Fragment {
                     if (cell != null) {
                         try {
                             String code = getCellStringValue(cell);
-                            if (code != null) {
-                                String normalized = normalizeCode(code);
-                                if (!normalized.isEmpty()) {
-                                    loadedCodes.add(normalized);
-                                }
+                            if (code != null && !code.isEmpty()) {
+                                loadedCodes.add(code);
                             }
                         } catch (Exception e) {
                             // ignore non-string cells
@@ -201,8 +199,8 @@ public class CheckFragment extends Fragment {
         }
     }
 
-    private String normalizeCode(String code) {
-        return code == null ? "" : code.trim();
+private String normalizeCode(String code) {
+        return code.trim();
     }
 
     private String getFileName(Uri uri) {
